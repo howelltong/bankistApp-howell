@@ -6,7 +6,7 @@
 // DIFFERENT DATA! Contains movement dates, currency and locale
 
 const account1 = {
-  owner: 'Jonas Schmedtmann',
+  owner: 'Christiano Ronaldo',
   movements: [200, 455.23, -306.5, 25000, -642.21, -133.9, 79.97, 1300],
   interestRate: 1.2, // %
   pin: 1111,
@@ -77,64 +77,38 @@ const inputClosePin = document.querySelector('.form__input--pin');
 /////////////////////////////////////////////////
 // Functions
 
-
-// creating external function for simplicity of code
 const formatMovementDate = function (date, locale) {
-  //---------2. Operation with dates
-  //place at top of scop 
   const calcDaysPassed = (date1, date2) => Math.round(Math.abs(date2 - date1) / (1000 * 60 * 60 * 24))
 
-  const daysPassed = calcDaysPassed(new Date(), date) //current date and date received by function
-  console.log(daysPassed); //days between current date and movement executed
+  const daysPassed = calcDaysPassed(new Date(), date);
 
-  //custom days passsed return string, longer than 7 days return actual date itself
   if (daysPassed === 0) return 'Today';
   if (daysPassed === 1) return 'Yesterday';
   if (daysPassed <= 7) return `${daysPassed} days ago`;
 
-  //-----3. INTERNATIONALISATION => remove old code
-  // //no need to use 'else' statement as following code is only executed if the previous if statements aren't returned
-  // const day = `${date.getDate()}`.padStart(2, 0); //format double digit => e.g 02 instead of 2
-  // const month = `${date.getMonth() + 1}`.padStart(2, 0);
-  // const year = date.getFullYear()
-  // return `${day}/${month}/${year}`
+  return new Intl.DateTimeFormat(locale).format(date);
+};
 
-  //-----3. INTERNATIONALISATION => add API
-  return new Intl.DateTimeFormat(locale).format(date) //no options required
-
-
-}
-
-const formatCur = function (value, locale, currency) { //pass in parameters that is reusable across applications
-  //-------4. INTERNATIONALISATION => NUMBERS
-  return new Intl.NumberFormat(locale, { //no need to create new variable (variable => formatCur)
+//set currency locale
+const formatCur = function (value, locale, currency) {
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
-  }).format(value)
-}
+  }).format(value);
+};
 
-//////////////APP 1: MATH AND ROUNDING => DISPLAY NUMBERS TO 2 DECIMAL PLACES/////////////
-//-----1. Pass in entire accounts array to get access to both movements and movementsDate (originally only passed in 'movements' as an argument)
 const displayMovements = function (acc, sort = false) {
   containerMovements.innerHTML = '';
-
-  //------1. movements ===> acc.movements (Specify property as movements is not being passed directly anymore)
   const movs = sort ? acc.movements.slice().sort((a, b) => a - b) : acc.movements;
 
+  //display movements + set display language/date format to the account's respective locale
   movs.forEach(function (mov, i) {
     const type = mov > 0 ? 'deposit' : 'withdrawal';
-
-    //-------1. loop over both mov and mov dates using index (originall just mov)
-    //call forEach on movements, but use given i to loop over a different array
-    const date = new Date(acc.movementsDates[i]) // => convert from str to js Date object 
-
-    //result should be the output of formatMovementDate
+    const date = new Date(acc.movementsDates[i])
     const displayDate = formatMovementDate(date, acc.locale)
-
-    //-------4. INTERNATIONALISATION => NUMBERS
     const formattedMov = formatCur(mov, acc.locale, acc.currency)
 
-    //-----1. ADD DATE TO HTML DISPLAY
+    //ADD DATE TO HTML DISPLAY
     const html = ` 
       <div class="movements__row">
         <div class="movements__type movements__type--${type}">${i + 1
@@ -143,50 +117,40 @@ const displayMovements = function (acc, sort = false) {
         <div class="movements__value">${formattedMov}</div> 
       </div>
     `;
-    //.toFixed(2) => 2 decimal places on the displayed number
-
     containerMovements.insertAdjacentHTML('afterbegin', html);
   });
 };
 
-//////////////APP 1: MATH AND ROUNDING => DISPLAY NUMBERS TO 2 DECIMAL PLACES/////////////
 const calcDisplayBalance = function (acc) {
   acc.balance = acc.movements.reduce((acc, mov) => acc + mov, 0);
-
-  //-------4. INTERNATIONALISATION => NUMBERS
-  labelBalance.textContent = formatCur(acc.balance, acc.locale, acc.currency); //.toFixed(2) => 2 decimal places on the displayed number
+  labelBalance.textContent = formatCur(acc.balance, acc.locale, acc.currency);
 };
 
 
-//////////////APP 1: MATH AND ROUNDING => DISPLAY NUMBERS TO 2 DECIMAL PLACES/////////////
 const calcDisplaySummary = function (acc) {
   const incomes = acc.movements
     .filter(mov => mov > 0)
     .reduce((acc, mov) => acc + mov, 0);
-  // labelSumIn.textContent = `${incomes.toFixed(2)}€`; //.toFixed(2) => 2 decimal places on the displayed number
-  //-------4. INTERNATIONALISATION => NUMBERS
   labelSumIn.textContent = formatCur(incomes, acc.locale, acc.currency);;
 
   const out = acc.movements
     .filter(mov => mov < 0)
     .reduce((acc, mov) => acc + mov, 0);
-  // labelSumOut.textContent = `${Math.abs(out).toFixed(2)}€`; //.toFixed(2) => 2 decimal places on the displayed number
-  //-------4. INTERNATIONALISATION => NUMBERS
   labelSumOut.textContent = formatCur(Math.abs(out), acc.locale, acc.currency);
 
   const interest = acc.movements
     .filter(mov => mov > 0)
     .map(deposit => (deposit * acc.interestRate) / 100)
     .filter((int, i, arr) => {
-      // console.log(arr);
       return int >= 1;
     })
     .reduce((acc, int) => acc + int, 0);
-  // labelSumInterest.textContent = `${interest.toFixed(2)}€`; //.toFixed(2) => 2 decimal places on the displayed number
-  //-------4. INTERNATIONALISATION => NUMBERS
+
+
   labelSumInterest.textContent = formatCur(interest, acc.locale, acc.currency);
 };
 
+//create username to login for each account (first letters of full name)
 const createUsernames = function (accs) {
   accs.forEach(function (acc) {
     acc.username = acc.owner
@@ -200,7 +164,7 @@ createUsernames(accounts);
 
 const updateUI = function (acc) {
   // Display movements
-  displayMovements(acc); //------1. acc.movements ===> acc (pass in entire account to the displayMovements function)
+  displayMovements(acc);
 
   // Display balance
   calcDisplayBalance(acc);
@@ -210,20 +174,13 @@ const updateUI = function (acc) {
 };
 
 
-//---------6. SET LOGOUT TIMER 
-
+//SET LOGOUT TIMER 
 const startLogOutTimer = function () {
-  //pseudo code to export some functionality into an external function
-  //export function out of setInterval => start immediately and then call again every second
   const tick = function () {
-    //convert timer to mins and seconds 
     const min = String(Math.trunc(time / 60)).padStart(2, 0);
-    const sec = String(time % 60).padStart(2, 0)
+    const sec = String(time % 60).padStart(2, 0);
 
-    //in each call, print the remaining time to the UI
     labelTimer.textContent = `${min}:${sec}`;
-
-
 
     //when 0 seconds, stop timer and log out user
     if (time === 0) {
@@ -234,35 +191,24 @@ const startLogOutTimer = function () {
       containerApp.style.opacity = 0;
     }
 
-    //place after so that at end of time will display 0
-    //decrease 1s
     time--;
   }
-
-  //set start time to 5 minutes
+  //set start time to 2 minutes
   let time = 120;
 
 
-  //call the timer eery second
-  tick()
-  const timer = setInterval(tick, 1000) //CB function is called after interval (after one second) => need to change to immediate
-  return timer //to clear the timer (clearInterval()) requires timer variable
+  //countdown every second
+  tick();
+  const timer = setInterval(tick, 1000);
+  return timer;
 
 }
 
 ///////////////////////////////////////
 // Event handlers 
-let currentAccount, timer; //global variables, persist between different logins (otherwise will disappear after completion)
-
-// // FAKE ALWAYS STAY LOGGED IN
-// currentAccount = account1;
-// updateUI(currentAccount)
-// containerApp.style.opacity = 100;
-
-
+let currentAccount, timer;
 
 btnLogin.addEventListener('click', function (e) {
-  // Prevent form from submitting
   e.preventDefault();
 
   currentAccount = accounts.find(
@@ -270,16 +216,17 @@ btnLogin.addEventListener('click', function (e) {
   );
   console.log(currentAccount);
 
-  if (currentAccount?.pin === +inputLoginPin.value) { //+inputLoginPin.value === Number(inputLoginPin.value)
+  if (currentAccount?.pin === +inputLoginPin.value) {
+
     // Display UI and message
     labelWelcome.textContent = `Welcome back, ${currentAccount.owner.split(' ')[0]
       }`;
     containerApp.style.opacity = 100;
 
-    // ------1. Set date below current balance on LOGIN
+    //Set date on LOGIN
     const now = new Date();
-    //providing options object for additional formatting
-    const options = { //additional properties
+
+    const options = {
       hour: 'numeric',
       minute: 'numeric',
       day: '2-digit',
@@ -287,32 +234,16 @@ btnLogin.addEventListener('click', function (e) {
       year: 'numeric',
       weekday: 'long'
     }
-    //defining locale using user's browser and not manually inputting (e.g. en-AU)
-    // const locale = navigator.language //note accounts objects have their own locale, will use that instead
-    // console.log(locale);
 
-    labelDate.textContent = new Intl.DateTimeFormat(currentAccount.locale, options).format(now) //using Intl Namespace API + date to be formatted
-    //requires login to display
-
-
-    // labelDate.textContent = now //results in a long convoluted date => need to simplify 'day/month/year' format
-    //formatting 
-    //-------3. Internationalisation => remove previous code for API
-    // const day = `${now.getDate()}`.padStart(2, 0); //format double digit => e.g 02 instead of 2
-    // const month = `${now.getMonth() + 1}`.padStart(2, 0);
-    // const year = now.getFullYear();
-    // const hour = `${now.getHours()}`.padStart(2, 0);
-    // const min = `${now.getMinutes()}`.padStart(2, 0);
-    // labelDate.textContent = `${day}/${month}/${year}, ${hour}:${min}`; //note that time will be static in this format
+    labelDate.textContent = new Intl.DateTimeFormat(currentAccount.locale, options).format(now)
 
     // Clear input fields
     inputLoginUsername.value = inputLoginPin.value = '';
     inputLoginPin.blur();
 
     //timer 
-    //first clear timer
     if (timer) clearInterval(timer)
-    timer = startLogOutTimer(); //reset timer to the designated start time in external function 
+    timer = startLogOutTimer();
 
     // Update UI
     updateUI(currentAccount);
@@ -337,11 +268,8 @@ btnTransfer.addEventListener('click', function (e) {
     currentAccount.movements.push(-amount);
     receiverAcc.movements.push(amount);
 
-    //-----1. add date of transfer to movementsDate (transfer out)
     currentAccount.movementsDates.push(new Date().toISOString())
-    //-----1. add date of transfer to movementsDate (transfer in)
     receiverAcc.movementsDates.push(new Date().toISOString())
-    //NOTE: in real world application, transfers would most likely have its own object rather than a simple movementsDate array
 
     // Update UI
     updateUI(currentAccount);
@@ -352,19 +280,16 @@ btnTransfer.addEventListener('click', function (e) {
   }
 });
 
-
-//////////////APP 1: MATH AND ROUNDING => CHANGE INPUTS TO INTEGERS/////////////
 btnLoan.addEventListener('click', function (e) {
   e.preventDefault();
-
-  const amount = Math.floor(inputLoanAmount.value); //note that floor() already does type coercion, no need to manually convert to number
+  const amount = Math.floor(inputLoanAmount.value);
 
   if (amount > 0 && currentAccount.movements.some(mov => mov >= amount * 0.1)) {
-    //------5. SET TIMEOUT()
-    setTimeout(function () {// Add movement
+    //SET TIMEOUT => simulate additional time to approve loan
+    setTimeout(function () {
       currentAccount.movements.push(amount);
 
-      //-----1. add date of transfer to movementsDate (transfer out)
+      //add date of transfer
       currentAccount.movementsDates.push(new Date().toDateString())
 
       // Update UI
@@ -380,7 +305,6 @@ btnLoan.addEventListener('click', function (e) {
 
 btnClose.addEventListener('click', function (e) {
   e.preventDefault();
-
   if (
     inputCloseUsername.value === currentAccount.username &&
     +(inputClosePin.value) === currentAccount.pin
@@ -388,8 +312,6 @@ btnClose.addEventListener('click', function (e) {
     const index = accounts.findIndex(
       acc => acc.username === currentAccount.username
     );
-    console.log(index);
-    // .indexOf(23)
 
     // Delete account
     accounts.splice(index, 1);
@@ -397,13 +319,12 @@ btnClose.addEventListener('click', function (e) {
     // Hide UI
     containerApp.style.opacity = 0;
   }
-
   inputCloseUsername.value = inputClosePin.value = '';
 });
 
 let sorted = false;
 btnSort.addEventListener('click', function (e) {
   e.preventDefault();
-  displayMovements(currentAccount, !sorted); ////------1. currentAccount.movements ===> currentAccount (pass in entire account to the displayMovements function)
+  displayMovements(currentAccount, !sorted);
   sorted = !sorted;
 });
